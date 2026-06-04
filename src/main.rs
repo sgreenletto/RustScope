@@ -1,18 +1,22 @@
+mod analyzer;
 mod cli;
 mod dependency;
 mod error;
 mod metrics;
 mod model;
+mod output;
 mod parser;
 mod report;
 mod scanner;
+mod tui;
 
-use std::{env, fs, process};
+use std::{env, process};
 
 use cli::{Command, ReportFormat};
 use error::RustScopeError;
-use model::{FileAnalysis, ProjectAnalysis};
-use report::{MarkdownReportGenerator, ReportGenerator, TerminalReportGenerator};
+use report::{
+    HtmlReportGenerator, MarkdownReportGenerator, ReportGenerator, TerminalReportGenerator,
+};
 
 fn main() {
     if let Err(error) = run() {
@@ -27,41 +31,27 @@ fn main() {
 fn run() -> Result<(), RustScopeError> {
     match cli::parse_args(env::args().skip(1))? {
         Command::Analyze(options) => {
-            let files = scanner::scan_rust_files(&options.project_path)?;
-            let mut analysis = ProjectAnalysis::new(options.project_path, files.len());
-
-            for file in files {
-                let content = fs::read_to_string(&file)?;
-                let line_metrics = metrics::calculate_line_metrics(&content);
-                let items = parser::parse_code_items(&content, &file);
-                let function_complexities =
-                    metrics::calculate_function_complexities(&content, &file);
-                let dependencies = dependency::parse_use_dependencies(&content, &file)?;
-
-                analysis.add_file_analysis(FileAnalysis {
-                    path: file,
-                    line_metrics,
-                    items,
-                    function_complexities,
-                    dependencies,
-                });
-            }
+            let analysis = analyzer::analyze_project(&options.project_path)?;
 
             let generator: Box<dyn ReportGenerator> = match options.format {
                 ReportFormat::Terminal => Box::new(TerminalReportGenerator),
                 ReportFormat::Markdown => Box::new(MarkdownReportGenerator),
+                ReportFormat::Html => Box::new(HtmlReportGenerator),
             };
             let report = generator.generate(&analysis)?;
 
             if let Some(output_path) = options.output {
-                fs::write(&output_path, report)
-                    .map_err(|error| RustScopeError::output_write(&output_path, error))?;
+                output::write_report(&output_path, &report)?;
                 println!("Report written to {}", output_path.display());
             } else {
                 println!("{report}");
             }
 
             Ok(())
+        }
+        Command::Tui(project_path) => {
+            let analysis = analyzer::analyze_project(&project_path)?;
+            tui::run_dashboard(&analysis)
         }
     }
 }

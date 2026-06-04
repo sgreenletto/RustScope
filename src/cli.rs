@@ -5,6 +5,7 @@ use crate::error::RustScopeError;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Command {
     Analyze(AnalyzeOptions),
+    Tui(PathBuf),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -18,6 +19,7 @@ pub struct AnalyzeOptions {
 pub enum ReportFormat {
     Terminal,
     Markdown,
+    Html,
 }
 
 pub fn parse_args<I, S>(args: I) -> Result<Command, RustScopeError>
@@ -29,10 +31,16 @@ where
 
     match args.as_slice() {
         [] => Err(RustScopeError::Argument(usage_message())),
-        [command] if command == "analyze" => Err(RustScopeError::Argument(usage_message())),
+        [command] if command == "analyze" || command == "tui" => {
+            Err(RustScopeError::Argument(usage_message()))
+        }
         [command, path, rest @ ..] if command == "analyze" => {
             parse_analyze_options(path, rest).map(Command::Analyze)
         }
+        [command, path] if command == "tui" => Ok(Command::Tui(PathBuf::from(path))),
+        [command, _, ..] if command == "tui" => Err(RustScopeError::Argument(
+            "unsupported argument for tui command".to_string(),
+        )),
         [path, rest @ ..] if path != "analyze" => {
             parse_analyze_options(path, rest).map(Command::Analyze)
         }
@@ -41,7 +49,7 @@ where
 }
 
 pub fn usage_message() -> String {
-    "Usage:\n  rustscope analyze <project-path> [--format terminal|markdown] [--output <file>]\n  rustscope <project-path> [--format terminal|markdown] [--output <file>]".to_string()
+    "Usage:\n  rustscope analyze <project-path> [--format terminal|markdown|html] [--output <file>]\n  rustscope <project-path> [--format terminal|markdown|html] [--output <file>]\n  rustscope tui <project-path>".to_string()
 }
 
 fn parse_analyze_options(path: &str, args: &[String]) -> Result<AnalyzeOptions, RustScopeError> {
@@ -85,6 +93,7 @@ impl ReportFormat {
         match value {
             "terminal" => Ok(Self::Terminal),
             "markdown" => Ok(Self::Markdown),
+            "html" => Ok(Self::Html),
             unsupported => Err(RustScopeError::Argument(format!(
                 "unsupported report format: {unsupported}"
             ))),
@@ -150,11 +159,59 @@ mod tests {
     }
 
     #[test]
-    fn rejects_unsupported_format() {
-        let error = parse_args(["analyze", "examples/demo_project", "--format", "html"])
-            .expect_err("html format should be rejected");
+    fn parses_html_format() {
+        let command = parse_args(["analyze", "examples/demo_project", "--format", "html"])
+            .unwrap_or_else(|error| panic!("expected html format to parse, got {error}"));
 
-        assert_eq!(error.to_string(), "unsupported report format: html");
+        assert_eq!(
+            command,
+            Command::Analyze(AnalyzeOptions {
+                project_path: PathBuf::from("examples/demo_project"),
+                format: ReportFormat::Html,
+                output: None,
+            })
+        );
+    }
+
+    #[test]
+    fn parses_html_format_with_output_path() {
+        let command = parse_args([
+            "analyze",
+            "examples/demo_project",
+            "--format",
+            "html",
+            "--output",
+            "reports/report.html",
+        ])
+        .unwrap_or_else(|error| panic!("expected html output options to parse, got {error}"));
+
+        assert_eq!(
+            command,
+            Command::Analyze(AnalyzeOptions {
+                project_path: PathBuf::from("examples/demo_project"),
+                format: ReportFormat::Html,
+                output: Some(PathBuf::from("reports/report.html")),
+            })
+        );
+    }
+
+    #[test]
+    fn parses_tui_subcommand() {
+        let command = parse_args(["tui", "examples/demo_project"])
+            .unwrap_or_else(|error| panic!("expected tui command to parse, got {error}"));
+
+        assert_eq!(
+            command,
+            Command::Tui(PathBuf::from("examples/demo_project"))
+        );
+    }
+
+    #[test]
+    fn rejects_unsupported_format() {
+        let error = parse_args(["analyze", "examples/demo_project", "--format", "docx"])
+            .expect_err("docx format should be rejected");
+
+        assert_eq!(error.to_string(), "unsupported report format: docx");
     }
 
     #[test]

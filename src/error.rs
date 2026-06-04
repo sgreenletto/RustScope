@@ -8,6 +8,7 @@ pub enum RustScopeError {
     Io(io::Error),
     InvalidPath(String),
     Argument(String),
+    Analysis(String),
     Parse(String),
     ReportGeneration(String),
     OutputWrite { path: PathBuf, source: io::Error },
@@ -19,6 +20,7 @@ impl fmt::Display for RustScopeError {
             Self::Io(error) => write!(formatter, "I/O error: {error}"),
             Self::InvalidPath(message)
             | Self::Argument(message)
+            | Self::Analysis(message)
             | Self::Parse(message)
             | Self::ReportGeneration(message) => formatter.write_str(message),
             Self::OutputWrite { path, source } => {

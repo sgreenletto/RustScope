@@ -62,6 +62,8 @@ pub struct FileAnalysis {
 pub struct ProjectAnalysis {
     pub project_path: PathBuf,
     pub files_analyzed: usize,
+    pub parallel_enabled: bool,
+    pub worker_threads: usize,
     pub files: Vec<FileAnalysis>,
     pub line_metrics: LineMetrics,
     pub items: Vec<CodeItem>,
@@ -74,6 +76,8 @@ impl ProjectAnalysis {
         Self {
             project_path,
             files_analyzed,
+            parallel_enabled: false,
+            worker_threads: 1,
             files: Vec::new(),
             line_metrics: LineMetrics::default(),
             items: Vec::new(),

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RustScope Analysis Report</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f6f8fb;color:#202733;}main{max-width:1100px;margin:0 auto;padding:32px;}h1{margin:0 0 8px;}section{background:#fff;border:1px solid #d9e0ea;border-radius:8px;margin:18px 0;padding:18px;}table{width:100%;border-collapse:collapse;}th,td{border-bottom:1px solid #e5e9f0;padding:8px;text-align:left;}th{background:#eef3f8;}td.num,th.num{text-align:right;}pre{background:#111827;color:#e5e7eb;padding:16px;border-radius:8px;overflow:auto;}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.pill{background:#eef3f8;border-radius:6px;padding:10px;}
+</style>
+</head>
+<body>
+<main>
+<h1>RustScope Analysis Report</h1>
+<section><h2>Project Summary</h2><div class="summary"><div class="pill"><strong>Project Path</strong><br>./examples/demo_project</div><div class="pill"><strong>Files Analyzed</strong><br>3</div><div class="pill"><strong>Parallel Analysis</strong><br>enabled</div><div class="pill"><strong>Worker Threads</strong><br>3</div></div></section>
+<section><h2>Line Metrics</h2><table><thead><tr><th>Metric</th><th class="num">Count</th></tr></thead><tbody><tr><td>Total Lines</td><td class="num">98</td></tr><tr><td>Code Lines</td><td class="num">85</td></tr><tr><td>Comment Lines</td><td class="num">0</td></tr><tr><td>Blank Lines</td><td class="num">13</td></tr></tbody></table></section>
+<section><h2>Code Items</h2><table><thead><tr><th>Item</th><th class="num">Count</th></tr></thead><tbody><tr><td>Functions</td><td class="num">8</td></tr><tr><td>Structs</td><td class="num">2</td></tr><tr><td>Enums</td><td class="num">1</td></tr><tr><td>Traits</td><td class="num">1</td></tr><tr><td>Modules</td><td class="num">2</td></tr><tr><td>Impl Blocks</td><td class="num">3</td></tr></tbody></table></section>
+<section><h2>Top Complex Functions</h2><table><thead><tr><th class="num">Rank</th><th>Function</th><th>File</th><th class="num">Line</th><th class="num">Complexity</th></tr></thead><tbody><tr><td class="num">1</td><td>analyze</td><td>./examples/demo_project\src\analyzer.rs</td><td class="num">12</td><td class="num">5</td></tr><tr><td class="num">2</td><td>run_demo</td><td>./examples/demo_project\src\main.rs</td><td class="num">16</td><td class="num">4</td></tr><tr><td class="num">3</td><td>run</td><td>./examples/demo_project\src\analyzer.rs</td><td class="num">39</td><td class="num">2</td></tr><tr><td class="num">4</td><td>new</td><td>./examples/demo_project\src\analyzer.rs</td><td class="num">8</td><td class="num">1</td></tr><tr><td class="num">5</td><td>run</td><td>./examples/demo_project\src\domain.rs</td><td class="num">13</td><td class="num">1</td></tr></tbody></table></section>
+<section><h2>Module Dependencies</h2><table><thead><tr><th>From</th><th>To</th></tr></thead><tbody><tr><td>./examples/demo_project/src/analyzer.rs</td><td>crate::domain::{DemoItem, DemoState, Runnable}</td></tr><tr><td>./examples/demo_project/src/main.rs</td><td>analyzer::Analyzer</td></tr><tr><td>./examples/demo_project/src/main.rs</td><td>domain::{DemoItem, DemoState, Runnable}</td></tr></tbody></table></section>
+<section><h2>Mermaid Dependency Graph</h2><pre class="mermaid"><code>graph TD
+    node0[&quot;./examples/demo_project/src/analyzer.rs&quot;]
+    node2[&quot;./examples/demo_project/src/main.rs&quot;]
+    node3[&quot;analyzer::Analyzer&quot;]
+    node1[&quot;crate::domain::{DemoItem, DemoState, Runnable}&quot;]
+    node4[&quot;domain::{DemoItem, DemoState, Runnable}&quot;]
+    node0 --&gt; node1
+    node2 --&gt; node3
+    node2 --&gt; node4
+</code></pre></section>
+</main>
+</body>
+</html>
