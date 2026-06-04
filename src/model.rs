@@ -1,6 +1,12 @@
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DependencyEdge {
+    pub from: String,
+    pub to: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ItemKind {
     Function,
     Struct,
@@ -44,22 +50,44 @@ pub struct FunctionComplexity {
 }
 
 #[derive(Debug, Clone)]
-pub struct AnalysisReport {
-    pub project_path: PathBuf,
-    pub files_analyzed: usize,
+pub struct FileAnalysis {
+    pub path: PathBuf,
     pub line_metrics: LineMetrics,
     pub items: Vec<CodeItem>,
     pub function_complexities: Vec<FunctionComplexity>,
+    pub dependencies: Vec<DependencyEdge>,
 }
 
-impl AnalysisReport {
+#[derive(Debug, Clone)]
+pub struct ProjectAnalysis {
+    pub project_path: PathBuf,
+    pub files_analyzed: usize,
+    pub files: Vec<FileAnalysis>,
+    pub line_metrics: LineMetrics,
+    pub items: Vec<CodeItem>,
+    pub function_complexities: Vec<FunctionComplexity>,
+    pub dependencies: Vec<DependencyEdge>,
+}
+
+impl ProjectAnalysis {
     pub fn new(project_path: PathBuf, files_analyzed: usize) -> Self {
         Self {
             project_path,
             files_analyzed,
+            files: Vec::new(),
             line_metrics: LineMetrics::default(),
             items: Vec::new(),
             function_complexities: Vec::new(),
+            dependencies: Vec::new(),
         }
+    }
+
+    pub fn add_file_analysis(&mut self, file: FileAnalysis) {
+        self.line_metrics.add(&file.line_metrics);
+        self.items.extend(file.items.iter().cloned());
+        self.function_complexities
+            .extend(file.function_complexities.iter().cloned());
+        self.dependencies.extend(file.dependencies.iter().cloned());
+        self.files.push(file);
     }
 }

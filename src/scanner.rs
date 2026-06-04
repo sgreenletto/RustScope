@@ -84,6 +84,16 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn rejects_invalid_project_path() {
+        let path = std::env::temp_dir().join("rustscope_missing_project_path");
+
+        assert!(matches!(
+            scan_rust_files(&path),
+            Err(RustScopeError::InvalidPath(_))
+        ));
+    }
+
     fn unique_test_dir(name: &str) -> Result<PathBuf, RustScopeError> {
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)

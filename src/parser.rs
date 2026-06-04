@@ -145,14 +145,13 @@ fn extract_impl_name(line: &str) -> Option<String> {
         return None;
     }
 
-    let before_body = after_keyword
-        .split(['{', ';'])
-        .next()
-        .unwrap_or_default()
-        .split(" where ")
-        .next()
-        .unwrap_or_default()
-        .trim();
+    let before_body = match after_keyword.split(['{', ';']).next() {
+        Some(value) => match value.split(" where ").next() {
+            Some(value) => value.trim(),
+            None => "",
+        },
+        None => "",
+    };
 
     if before_body.is_empty() {
         Some("<anonymous impl>".to_string())
