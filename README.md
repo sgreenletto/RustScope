@@ -1,180 +1,157 @@
-# RustScope
+# Rust 多线程日志统计器
 
-RustScope is a local Rust project code structure analysis and quality report tool. Given a Rust project path, it recursively scans `.rs` files, calculates line metrics, recognizes basic Rust items, estimates simple function complexity, analyzes `use` dependencies, and generates terminal, Markdown, HTML, or lightweight TUI views.
+## 一、项目简介
 
-## Features
+本项目是一个使用 Rust 实现的多线程日志统计器，主要用于练习 `Arc<T>` 和 `Mutex<T>` 在多线程场景下的使用。
 
-- `analyze` command with `terminal`, `markdown`, and `html` report formats.
-- `tui` command for an interactive terminal dashboard.
-- Recursive `.rs` scanning with `target/` and `.git/` ignored.
-- Multi-threaded file analysis with `std::thread` and `mpsc`.
-- Total, code, comment, and blank line metrics.
-- Basic item recognition for `fn`, `struct`, `enum`, `trait`, `mod`, and `impl`.
-- Heuristic function complexity scoring for `if`, `match`, `for`, `while`, `loop`, and `?`.
-- Simple `use` dependency analysis for paths such as `crate::`, `super::`, `std::`, and local modules.
-- Markdown and HTML reports with Mermaid dependency graph source.
-- `--output` support with automatic parent directory creation.
-- Unified `RustScopeError` error handling.
+程序会将日志数据分块交给多个子线程并发处理，并统计以下内容：
 
-## Project Structure
+1. 每种日志级别出现的次数，例如 `INFO`、`WARN`、`ERROR`；
+2. 每个服务出现 `ERROR` 日志的次数；
+3. 每个服务下各日志级别出现的次数；
+4. 格式错误而被跳过的日志数量。
+
+本项目没有使用 `Rc<RefCell<T>>`，而是使用 `Arc<Mutex<HashMap<...>>>` 在线程之间共享并安全修改统计结果。
+
+## 二、项目结构
 
 ```text
-src/
-  main.rs        Program entry point
-  cli.rs         Command line parsing
-  analyzer.rs    Project analysis orchestration and parallel workers
-  scanner.rs     Recursive Rust file scanner
-  metrics.rs     Line metrics and function complexity
-  parser.rs      Basic Rust item recognition
-  dependency.rs  use dependency analysis
-  report.rs      Terminal, Markdown, HTML, and Mermaid report generation
-  output.rs      Report file writing
-  tui.rs         Lightweight terminal dashboard
-  model.rs       Core data structures
-  error.rs       Unified error types
+third/
+├── Cargo.toml
+├── Cargo.lock
+├── README.md
+└── src/
+    └── main.rs
 ```
 
-## Build
+主要文件说明：
+
+* `Cargo.toml`：Rust 项目配置文件；
+* `Cargo.lock`：依赖版本锁定文件；
+* `src/main.rs`：程序主要源代码；
+* `README.md`：项目说明和运行方式。
+
+## 三、运行环境
+
+需要提前安装 Rust 环境。
+
+可以在命令行中输入下面的命令检查是否安装成功：
 
 ```bash
-cargo build
+rustc --version
+cargo --version
 ```
 
-## Run
+如果能够正常显示版本号，说明 Rust 环境已经配置完成。
 
-Terminal report:
+## 四、运行方式
+
+进入项目根目录，例如：
 
 ```bash
-cargo run -- analyze ./examples/demo_project
+cd third
 ```
 
-Explicit terminal format:
+然后运行：
 
 ```bash
-cargo run -- analyze ./examples/demo_project --format terminal
+cargo run
 ```
 
-Markdown report:
+如果需要先格式化代码，可以运行：
 
 ```bash
-cargo run -- analyze ./examples/demo_project --format markdown --output reports/report.md
+cargo fmt
 ```
 
-HTML report:
+再运行：
 
 ```bash
-cargo run -- analyze ./examples/demo_project --format html --output reports/report.html
+cargo run
 ```
 
-TUI dashboard:
+## 五、实现思路
 
-```bash
-cargo run -- tui ./examples/demo_project
-```
+程序使用 `thread::spawn` 创建多个子线程，每个线程负责处理一部分日志数据。
 
-Press `q` and Enter to exit the lightweight TUI dashboard.
+为了让多个线程共享统计结果，程序使用了 `Arc`。因为多个线程会同时修改 `HashMap`，所以又使用 `Mutex` 对共享数据进行保护，避免数据竞争。
 
-Short analyze form:
-
-```bash
-cargo run -- ./examples/demo_project
-```
-
-## Example Terminal Output
-
-```text
-RustScope Analysis Report
-=========================
-
-Project: ./examples/demo_project
-
-Files analyzed: 3
-
-Parallel analysis: enabled
-Worker threads: 3
-
-Line Metrics:
-- Total lines: 98
-- Code lines: 85
-- Comment lines: 0
-- Blank lines: 13
-
-Code Items:
-- Functions: 8
-- Structs: 2
-- Enums: 1
-- Traits: 1
-- Modules: 2
-- Impl blocks: 3
-
-Top Complex Functions:
-1. analyze              ./examples/demo_project/src/analyzer.rs:12    complexity: 5
-2. run_demo             ./examples/demo_project/src/main.rs:16        complexity: 4
-
-Module Dependencies:
-./examples/demo_project/src/analyzer.rs -> crate::domain::{DemoItem, DemoState, Runnable}
-./examples/demo_project/src/main.rs -> analyzer::Analyzer
-./examples/demo_project/src/main.rs -> domain::{DemoItem, DemoState, Runnable}
-```
-
-## Report Formats
-
-- `terminal`: default plain terminal report.
-- `markdown`: Markdown report with summary tables and Mermaid graph source.
-- `html`: static HTML report with CSS, tables, escaped text, and Mermaid graph source.
-
-HTML reports do not start a web service. Open `reports/report.html` directly in a browser. The current HTML report displays Mermaid as source code; it can be copied into a Mermaid previewer if rendered graph output is needed.
-
-## Dependency Analysis
-
-RustScope performs lightweight `use` dependency analysis after comment stripping. It recognizes direct `use` statements such as:
+程序中主要使用了以下共享统计结构：
 
 ```rust
-use crate::scanner;
-use crate::parser::parse_file;
-use super::model::ProjectAnalysis;
-use std::collections::HashMap;
+Arc<Mutex<HashMap<String, usize>>>
 ```
 
-The Markdown and HTML reports include both a dependency table and Mermaid graph source. Node IDs are generated as safe values such as `node0`, while labels preserve the original module or path names.
+用于保存：
 
-## Demo Reports
+* `level_count`：每种日志级别出现次数；
+* `service_error_count`：每个服务出现 `ERROR` 日志的次数。
 
-Generated files under `reports/` can be used as presentation material:
+同时，程序还使用：
+
+```rust
+Arc<Mutex<HashMap<String, HashMap<String, usize>>>>
+```
+
+用于保存：
+
+* `service_level_count`：每个服务下各日志级别出现的次数。
+
+每个线程不是每处理一条日志就加锁，而是先使用本地 `HashMap` 统计自己负责的日志。线程处理完成后，再统一加锁，将本地统计结果合并到全局统计结果中。这样可以减少锁竞争。
+
+主线程会使用 `join()` 等待所有子线程执行结束，然后再打印最终统计结果。
+
+## 六、扩展功能
+
+在基础要求之外，本项目还实现了以下扩展功能：
+
+1. 统计每个服务下各日志级别出现次数，即 `service_level_count`；
+2. 处理缺少 `service` 或 `level` 字段的格式错误日志，并统计 `skipped_count`；
+3. 每个线程先进行本地统计，最后统一合并到共享结果中，减少锁竞争。
+
+为了演示格式错误日志处理功能，程序在原始日志数据基础上额外加入了 2 条格式错误日志。
+
+## 七、示例运行结果
+
+运行：
 
 ```bash
-cargo run -- analyze ./examples/demo_project --format markdown --output reports/report.md
-cargo run -- analyze ./examples/demo_project --format html --output reports/report.html
+cargo run
 ```
 
-If `reports/` does not exist, RustScope creates it automatically.
+示例输出如下：
 
-## Test
+```text
+level_count:
+{
+    "ERROR": 3,
+    "INFO": 1,
+    "WARN": 2,
+}
 
-```bash
-cargo fmt --check
-cargo clippy -- -D warnings
-cargo test
+service_error_count:
+{
+    "auth": 2,
+    "payment": 1,
+}
+
+service_level_count:
+{
+    "auth": {
+        "ERROR": 2,
+    },
+    "order": {
+        "INFO": 1,
+        "WARN": 1,
+    },
+    "payment": {
+        "ERROR": 1,
+        "WARN": 1,
+    },
+}
+
+skipped_count:
+2
 ```
 
-On Windows, if the default `target/` directory has an incremental compilation permission issue, use:
-
-```powershell
-cargo test --target-dir "$env:TEMP\rustscope-target"
-cargo clippy --target-dir "$env:TEMP\rustscope-target" -- -D warnings
-```
-
-## Current Limits
-
-- RustScope uses lightweight text rules, not a complete Rust compiler AST.
-- Function complexity is heuristic and intentionally simple.
-- Dependency analysis reads direct `use` statements and does not fully expand grouped imports.
-- The TUI is a single-page dashboard, not a full multi-page terminal app.
-- Mermaid output is source text, not exported images.
-
-## Future Ideas
-
-- More precise AST-based analysis.
-- Incremental cache.
-- More advanced TUI interactions.
-- Dependency graph image export.
+说明：`HashMap` 本身不保证输出顺序，因此实际运行时字段顺序可能不同，但统计结果应保持一致。
