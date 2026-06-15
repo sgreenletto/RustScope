@@ -69,35 +69,70 @@ cargo fmt
 ```bash
 cargo run
 ```
-1. 分析当前项目
+
+### 1. 分析当前项目
 
 在项目根目录下运行：
 
+```bash
 cargo run -- analyze .
+```
 
 也可以使用简写形式：
 
+```bash
 cargo run -- .
+```
 
-其中 . 表示分析当前目录。
+其中 `.` 表示分析当前目录。
 
-2. 分析指定 Rust 项目
+### 2. 分析指定 Rust 项目
 
-如果要分析其他 Rust 项目，可以传入项目路径：
+也可以传入其他 Rust 项目的路径：
 
+```bash
 cargo run -- analyze "D:\study\rust程序设计\third"
+```
 
-路径中如果包含中文或空格，建议使用双引号包起来。
+如果路径中包含中文或空格，建议使用双引号包起来。
 
-3. 生成 Markdown 报告
+### 3. 生成 Markdown 报告
+
+```bash
 cargo run -- analyze . --format markdown --output report.md
+```
 
-运行后会在当前目录生成 report.md。
+运行后会在当前目录生成 `report.md`。
 
-4. 生成 HTML 报告
+### 4. 生成 HTML 报告
+
+```bash
 cargo run -- analyze . --format html --output report.html
-5. 启动 TUI 界面
+```
+
+### 5. 启动 TUI 界面
+
+```bash
 cargo run -- tui .
+```
+
+## 示例运行结果
+
+在项目根目录下运行：
+
+```bash
+cargo run -- analyze .
+```
+
+程序会输出当前项目的分析结果，例如项目文件数量、代码行数、结构信息等。
+
+如果需要保存报告，可以运行：
+
+```bash
+cargo run -- analyze . --format markdown --output report.md
+```
+
+生成的 `report.md` 可以作为项目分析报告查看。
 
 ## 五、实现思路
 
